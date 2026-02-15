@@ -1,73 +1,106 @@
-# React + TypeScript + Vite
+FeedMe – Frontend Prototype
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the frontend implementation of the McDonald’s Order Controller take-home assignment.
 
-Currently, two official plugins are available:
+Built with:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+React
 
-## React Compiler
+TypeScript
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite
 
-## Expanding the ESLint configuration
+Zustand (state management)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+TailwindCSS (styling)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+This is a prototype implementation that focuses on correctness, clarity, and fulfilling the assignment requirements without overengineering.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+🚀 How to Run Locally
+cd frontend
+npm install
+npm run dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+🏗 How to Build
+npm run build
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+🧠 Implementation Overview
+Order Model
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Each order has:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+id (internal numeric ID)
+
+displayId (N1, V2, etc.)
+
+type (VIP or NORMAL)
+
+status (PENDING → PROCESSING → COMPLETE)
+
+Orders are stored as the single source of truth in the Zustand store.
+
+Queues
+
+Three queues are used:
+
+vipQueue
+
+normalQueue
+
+resumeQueue (for cancelled in-progress orders)
+
+Dispatch priority:
+
+Resume queue
+
+VIP queue
+
+Normal queue
+
+This ensures:
+
+VIP priority is respected.
+
+Cancelled work is not starved.
+
+No order is lost when bots are removed.
+
+Bot Behavior
+
+Each bot can process only one order at a time.
+
+Processing is simulated using setTimeout (10 seconds).
+
+When a bot is removed while processing:
+
+The timeout is cleared.
+
+The order returns to PENDING.
+
+The order is inserted into resumeQueue to be processed next.
+
+A race-condition guard is implemented to prevent “ghost completion” if a bot is removed mid-process.
+
+🧪 Manual Testing Scenarios
+
+Add 1 bot → Add 1 normal order → Order completes after 10 seconds.
+
+Add normal → Add VIP → VIP processes first.
+
+Add multiple bots → Add multiple orders → Concurrent processing.
+
+Remove a busy bot → Order returns to pending → Add bot → Order resumes correctly.
+
+Cancelled normal order should process before newly added VIP order.
+
+🎯 Design Decisions
+
+Zustand was chosen for simplicity and clear state management.
+
+All state updates are immutable to ensure proper UI re-render.
+
+The dispatcher runs automatically after any state change (order added, bot added, bot removed).
+
+The implementation prioritizes readability and correctness over abstraction.
+
+This implementation focuses on meeting the assignment requirements clearly and safely, without introducing unnecessary complexity.
